@@ -34,19 +34,17 @@ from utils.models import SecretDecoder
 from mscoco_util import CoCo_Dataset
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-learning_rate",type=float, default=1e-4)
-parser.add_argument("-snr_gamma",type=str, default="1.0")
-parser.add_argument("-epoch",type=int, default=50)
+parser.add_argument(
+    "-model_path",
+    type=Path,
+    default=Path("UNet/checkpoint/gt_dm_watermark_v1/all/unet_final.pt"),
+    help="Path to the trained UNet weights.",
+)
 parser.add_argument("-guidance", type=float, default=7.5)
 parser.add_argument("-steps", type=int, default=30)
 parser.add_argument("-scheduler", type=str, default="dpms_m")
 parser.add_argument("-vae", type=str, default="original")
 args = parser.parse_args()
-
-def sci_str(x, precision=0):
-    s = f"{x:.{precision}e}"
-    s = s.replace("e-0", "e-").replace("e+0", "e+")
-    return s
 
 def msg2str(msg):
     return "".join([('1' if el else '0') for el in msg])
@@ -95,8 +93,8 @@ if vae is not None:
     pipe_kwargs["vae"] = vae
 
 pipe = StableDiffusionPipeline.from_pretrained("Manojb/stable-diffusion-2-1-base", **pipe_kwargs)
-state_dict = torch.load(f"LoRA/checkpoint/gt_dm_watermark_lr{sci_str(args.learning_rate)}_snr{args.snr_gamma}_v1/all/unet_final.pt", map_location="cuda:0")
-print("Model path: ", f"LoRA/checkpoint/gt_dm_watermark_lr{sci_str(args.learning_rate)}_snr{args.snr_gamma}_v1/all/unet_final.pt")
+state_dict = torch.load(args.model_path, map_location="cuda:0")
+print("Model path: ", args.model_path)
 print("VAE: ", args.vae)
 pipe.unet.load_state_dict(state_dict)
 pipe = set_scheduler(pipe, args.scheduler)
@@ -163,7 +161,7 @@ def decode_one(pil_img):
 
 all_acc, all_match, all_ok = [], [], []
 TP, FN = 0, 0
-save_dir = Path("syn_images") / f"lr{args.learning_rate}_snr{args.snr_gamma}_epoch{args.epoch}_guidance{args.guidance}_steps{args.steps}_scheduler{args.scheduler}_vae{args.vae}"
+save_dir = Path("syn_images") / f"guidance{args.guidance}_steps{args.steps}_scheduler{args.scheduler}_vae{args.vae}"
 save_dir.mkdir(parents=True, exist_ok=True)
 img_idx = 0
 
@@ -207,12 +205,9 @@ print(f"TPR: {tpr:.4f}")
 
 results_dir = Path("saved_results") / "coco"
 results_dir.mkdir(parents=True, exist_ok=True)
-results_path = results_dir / f"results_lr{args.learning_rate}_snr{args.snr_gamma}_epoch{args.epoch}_guidance{args.guidance}_steps{args.steps}_scheduler{args.scheduler}_vae{args.vae}.json"
+results_path = results_dir / f"results_guidance{args.guidance}_steps{args.steps}_scheduler{args.scheduler}_vae{args.vae}.json"
 
 results = {
-    "learning_rate": args.learning_rate,
-    "snr_gamma": args.snr_gamma,
-    "epoch": args.epoch,
     "guidance": args.guidance,
     "steps": args.steps,
     "scheduler": args.scheduler,
