@@ -1,5 +1,4 @@
-# export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
-export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1}"
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0,1,2,3}"
 export MODEL_NAME="Manojb/stable-diffusion-2-1-base"
 versions=('v1')
 methods=("gt_dm_watermark")
